@@ -1,0 +1,213 @@
+---
+title: "BA- Final Project"
+author: "Akshaya Mamidipalli"
+date: "2023-12-10"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Q) Zillow's Zestimate home valuation has shaken up the U.S. real estate industry since first released 11 years
+ago. A home is often the largest and most expensive purchase a person makes in his or her lifetime.
+Ensuring homeowners have a trusted way to monitor this asset is incredibly important. The Zestimate
+was created to give consumers as much information as possible about homes and the housing market,
+marking the first-time consumers had access to this type of home value information at no cost.
+"Zestimates" are estimated home values based on 7.5 million statistical and machine learning models
+that analyze hundreds of data points on each property. And, by continually improving the median margin
+of error (from 14% at the onset to 5% today), Zillow has since become established as one of the largest,
+most trusted marketplaces for real estate information in the U.S. and a leading example of impactful
+machine learning. This project is the very simplified version of Zillow Prize competition. Zillow Prize was
+a competition with a one-million-dollar grand prize with the objective to help push the accuracy of the
+Zestimate even further. Winning algorithms stand to impact the home values of 110M homes across the
+U.S.
+
+#Instaling the required libraries.
+```{r}
+library(ggplot2)
+library(caret)
+library(rpart)
+```
+
+#Loading the "House prices.csv" as training data set.
+```{r}
+training_data <- read.csv("C:/Users/navat/Downloads/House_Prices (1).csv")
+```
+
+```{r}
+head(training_data)
+```
+
+```{r}
+summary(training_data)
+```
+
+#We have plotted the Lot Area vs Sale price for exploratory analysis.
+
+```{r}
+plot(training_data$LotArea,training_data$SalePrice)
+title("SalePrice Vs LotArea")
+xlab("LotArea")
+ylab("SalePrice")
+
+```
+#Further, we have also plotted box plots for all the variables. 
+
+#First, we have created a vector with all the variables
+```{r}
+Variables_vars <- c("LotArea", "OverallQual","YearBuilt","YearRemodAdd","BsmtFinSF1","FullBath","HalfBath","BedroomAbvGr", "TotRmsAbvGrd","Fireplaces","GarageArea", "YrSold", "SalePrice")
+
+Variables_vars
+```
+
+```{r}
+par(mfrow = c(2, 3))
+for (var in Variables_vars) {
+
+# Plot the boxplot
+boxplot(training_data[[var]], main = var)
+}
+```
+We have done the exploratory analysis by performing box plots on all the variables. 
+
+A) Build a regression [module 5] and decision tree [module 7] model that can accurately predict the
+price of a house based on several predictors (you select appropriate features).
+
+##Regression model
+
+#read the "BA_Predict.csv" as the testing data
+
+```{r}
+testing_data <- read.csv("C:/Users/navat/Downloads/BA-Predict1.csv")
+```
+
+```{r}
+head(testing_data)
+```
+
+```{r}
+str(training_data)
+```
+
+```{r}
+str(testing_data)
+```
+
+```{r}
+dim(training_data)
+dim(testing_data)
+```
+
+#performing the regression model 
+
+```{r}
+regression_model <- lm(SalePrice ~ GarageArea + YearBuilt + FullBath + OverallQual + LotArea + BsmtFinSF1 + YearRemodAdd + Fireplaces , data = training_data)
+```
+
+#summarize the regression model
+
+```{r}
+summary(regression_model)
+```
+
+#extract the residuals from the regression model
+
+```{r}
+residuals <- resid(regression_model)
+```
+
+#plotting a histogram of the residuals
+
+```{r}
+hist(residuals,main =" Distribution of regression model Residuals",xlab= "residuals")
+```
+
+#Predicting the regression model 
+
+```{r}
+regression_model_predictions <- predict(regression_model,newdata = testing_data)
+```
+
+#printing the regression model predictions
+
+```{r}
+print(regression_model_predictions)
+```
+
+##Decision Tree Model
+
+```{r}
+DT_model <- rpart(SalePrice ~ GarageArea + YearBuilt + FullBath + OverallQual + LotArea + BsmtFinSF1 + YearRemodAdd + Fireplaces , data = training_data)
+```
+
+#summarize the decision tree model
+
+```{r}
+summary(DT_model)
+```
+
+#plotting the decision tree model
+
+```{r}
+plot(DT_model)
+text(DT_model)
+```
+
+#predicting the decision-tree model
+
+```{r}
+DT_model_predictions <- predict(DT_model,Newdata = testing_data)
+```
+
+#printing the decision-tree model predictions
+
+```{r}
+print(DT_model_predictions)
+```
+
+##classification model
+
+#converting the "OverallQual" feature from both the datasets of testing and training.
+
+```{r}
+training_data$OverallQual <- as.numeric(training_data$OverallQual)
+testing_data$OverallQual <- as.numeric(testing_data$OverallQual)
+
+```
+
+```{r}
+training_data$OverallQual <- as.factor(ifelse(training_data$OverallQual >= 7, 1, 0))
+testing_data$OverallQual <- as.factor(ifelse(testing_data$OverallQual >= 7, 1, 0))
+
+levels(training_data$OverallQual)
+levels(testing_data$OverallQual)
+
+classification_model <- glm(OverallQual ~ GarageArea + YearBuilt + FullBath + LotArea + BsmtFinSF1 + YearRemodAdd + Fireplaces, data = training_data, family = "binomial")
+summary(classification_model)
+```
+
+```{r}
+classification_model_predictions <- predict(classification_model, newdata = testing_data , type = "response")
+```
+
+```{r}
+print(classification_model_predictions)
+
+```
+
+```{r}
+
+predicted_classes <- ifelse(classification_model_predictions >= 0.5, 1, 0)
+
+confusion_matrix <- table(predicted_classes, testing_data$OverallQual)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+
+confusion_matrix
+cat("Accuracy:", accuracy, "\n")
+
+```
+
+
